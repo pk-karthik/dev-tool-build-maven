@@ -299,6 +299,8 @@ public class PluginDescriptorBuilder
 
             parameter.setImplementation( d.getChild( "implementation" ).getValue() );
 
+            parameter.setSince( d.getChild( "since" ).getValue() );
+
             PlexusConfiguration paramConfig = mojoConfig.getChild( parameter.getName(), false );
             if ( paramConfig != null )
             {
@@ -311,7 +313,7 @@ public class PluginDescriptorBuilder
 
         mojo.setParameters( parameters );
 
-        // TODO: this should not need to be handed off...
+        // TODO this should not need to be handed off...
 
         // ----------------------------------------------------------------------
         // Requirements

@@ -104,8 +104,8 @@ public class VersionRange
 
         while ( process.startsWith( "[" ) || process.startsWith( "(" ) )
         {
-            int index1 = process.indexOf( ")" );
-            int index2 = process.indexOf( "]" );
+            int index1 = process.indexOf( ')' );
+            int index2 = process.indexOf( ']' );
 
             int index = index2;
             if ( index2 < 0 || index1 < index2 )
@@ -171,7 +171,7 @@ public class VersionRange
 
         Restriction restriction;
 
-        int index = process.indexOf( "," );
+        int index = process.indexOf( ',' );
 
         if ( index < 0 )
         {
@@ -295,7 +295,7 @@ public class VersionRange
             // original recommended version
             version = restriction.recommendedVersion;
         }
-/* TODO: should throw this immediately, but need artifact
+/* TODO should throw this immediately, but need artifact
         else
         {
             throw new OverConstrainedVersionException( "Restricting incompatible version ranges" );
@@ -518,7 +518,7 @@ public class VersionRange
 
     public ArtifactVersion matchVersion( List<ArtifactVersion> versions )
     {
-        // TODO: could be more efficient by sorting the list and then moving along the restrictions in order?
+        // TODO could be more efficient by sorting the list and then moving along the restrictions in order?
 
         ArtifactVersion matched = null;
         for ( ArtifactVersion version : versions )

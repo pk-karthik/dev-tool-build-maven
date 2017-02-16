@@ -36,8 +36,8 @@ import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
  * - network/transfer errors - file system errors: permissions
  *
  * @author Jason van Zyl
- * @TODO carlos: all these possible has*Exceptions and get*Exceptions methods make the clients too
- *       complex requiring a long list of checks, need to create a parent/interfact/encapsulation
+ * TODO carlos: all these possible has*Exceptions and get*Exceptions methods make the clients too
+ *       complex requiring a long list of checks, need to create a parent/interface/encapsulation
  *       for the types of exceptions
  */
 public class ArtifactResolutionResult
@@ -173,7 +173,7 @@ public class ArtifactResolutionResult
     }
 
     /**
-     * @TODO this needs to accept a {@link OverConstrainedVersionException} as returned by
+     * TODO this needs to accept a {@link OverConstrainedVersionException} as returned by
      *       {@link #getVersionRangeViolation(int)} but it's not used like that in
      *       {@link DefaultLegacyArtifactCollector}
      */
@@ -343,14 +343,14 @@ public class ArtifactResolutionResult
         if ( artifacts != null )
         {
             int i = 1;
-            sb.append( "---------" ).append( "\n" );
-            sb.append( artifacts.size() ).append( "\n" );
+            sb.append( "---------\n" );
+            sb.append( artifacts.size() ).append( '\n' );
             for ( Artifact a : artifacts )
             {
-                sb.append( i ).append( " " ).append( a ).append( "\n" );
+                sb.append( i ).append( ' ' ).append( a ).append( '\n' );
                 i++;
             }
-            sb.append( "---------" ).append( "\n" );
+            sb.append( "---------\n" );
         }
 
         return sb.toString();

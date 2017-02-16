@@ -332,10 +332,16 @@ public class DefaultArtifactResolver
                                                              throws ArtifactResolutionException,
                                                              ArtifactNotFoundException
     {
-        ArtifactResolutionRequest request =
-            new ArtifactResolutionRequest().setArtifact( originatingArtifact ).setResolveRoot( false )
+        ArtifactResolutionRequest request = new ArtifactResolutionRequest().
+            setArtifact( originatingArtifact ).
+            setResolveRoot( false ).
             // This is required by the surefire plugin
-            .setArtifactDependencies( artifacts ).setManagedVersionMap( managedVersions ).setLocalRepository( localRepository ).setRemoteRepositories( remoteRepositories ).setCollectionFilter( filter ).setListeners( listeners );
+            setArtifactDependencies( artifacts ).
+            setManagedVersionMap( managedVersions ).
+            setLocalRepository( localRepository ).
+            setRemoteRepositories( remoteRepositories ).
+            setCollectionFilter( filter ).
+            setListeners( listeners );
 
         injectSession2( request, legacySupport.getSession() );
 
@@ -370,7 +376,7 @@ public class DefaultArtifactResolver
         ArtifactFilter resolutionFilter = request.getResolutionFilter();
         RepositorySystemSession session = getSession( request.getLocalRepository() );
 
-        // TODO: hack because metadata isn't generated in m2e correctly and i want to run the maven i have in the
+        // TODO hack because metadata isn't generated in m2e correctly and i want to run the maven i have in the
         // workspace
         if ( source == null )
         {

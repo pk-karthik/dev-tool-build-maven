@@ -28,6 +28,7 @@ import org.apache.commons.lang3.Validate;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.properties.internal.SystemProperties;
 import org.eclipse.aether.RepositorySystemSession;
 
 public class DefaultProjectBuildingRequest
@@ -62,6 +63,7 @@ public class DefaultProjectBuildingRequest
 
     private boolean resolveDependencies;
 
+    @Deprecated
     private boolean resolveVersionRanges;
 
     private RepositoryMerging repositoryMerging = RepositoryMerging.POM_DOMINANT;
@@ -165,11 +167,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( systemProperties != null )
         {
-            this.systemProperties = new Properties();
-            synchronized ( systemProperties )
-            { // avoid concurrentmodification if someone else sets/removes an unrelated system property
-                this.systemProperties.putAll( systemProperties );
-            }
+            this.systemProperties = SystemProperties.copyProperties( systemProperties );
         }
         else
         {
@@ -221,14 +219,24 @@ public class DefaultProjectBuildingRequest
         return resolveDependencies;
     }
 
-    /** @since 3.2.2 */
+    /**
+     * @since 3.2.2
+     * @deprecated This got added when implementing MNG-2199 and is no longer used.
+     * Commit 6cf9320942c34bc68205425ab696b1712ace9ba4 updated the way 'MavenProject' objects are initialized.
+     */
+    @Deprecated
     public ProjectBuildingRequest setResolveVersionRanges( boolean value )
     {
         this.resolveVersionRanges = value;
         return this;
     }
 
-    /** @since 3.2.2 */
+    /**
+     * @since 3.2.2
+     * @deprecated This got added when implementing MNG-2199 and is no longer used.
+     * Commit 6cf9320942c34bc68205425ab696b1712ace9ba4 updated the way 'MavenProject' objects are initialized.
+     */
+    @Deprecated
     public boolean isResolveVersionRanges()
     {
         return this.resolveVersionRanges;

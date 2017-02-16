@@ -54,8 +54,8 @@
     <p>This is a reference for the Maven project descriptor used in Maven.</p>
     <p>An XSD is available at:</p>
     <ul>
-      <li><a href="http://maven.apache.org/xsd/maven-v3_0_0.xsd">http://maven.apache.org/xsd/maven-v3_0_0.xsd</a> for Maven 1.1.</li>
-      <li><a href="http://maven.apache.org/xsd/maven-4.0.0.xsd">http://maven.apache.org/xsd/maven-4.0.0.xsd</a> for Maven 2.0.</li>
+      <li><a href="https://maven.apache.org/xsd/maven-v3_0_0.xsd">https://maven.apache.org/xsd/maven-v3_0_0.xsd</a> for Maven 1.1.</li>
+      <li><a href="https://maven.apache.org/xsd/maven-4.0.0.xsd">https://maven.apache.org/xsd/maven-4.0.0.xsd</a> for Maven 2.0.</li>
     </ul>
     ]]>
   </description>
@@ -245,7 +245,7 @@
           <description>
             <![CDATA[
             The URL to the project's homepage.
-            <br /><b>Default value is</b>: parent value [+ path adjustment] + artifactId
+            <br /><b>Default value is</b>: parent value [+ path adjustment] + (artifactId or <code>project.directory</code> property)
             ]]>
           </description>
           <type>String</type>
@@ -701,7 +701,7 @@
             These dependencies are used to construct a classpath for your
             project during the build process. They are automatically downloaded from the
             repositories defined in this project.
-            See <a href="http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html">the
+            See <a href="https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html">the
             dependency mechanism</a> for more information.
             ]]>
           </description>
@@ -1359,7 +1359,7 @@
             The classifier of the dependency. It is appended to
             the filename after the version. This allows:
             <ul>
-            <li>refering to attached artifact, for example <code>sources</code> and <code>javadoc</code>:
+            <li>referring to attached artifact, for example <code>sources</code> and <code>javadoc</code>:
             see <a href="../maven-core/artifact-handlers.html">default artifact handlers</a> for a list,</li>
             <li>distinguishing two artifacts
             that belong to the same POM but were built differently.
@@ -1397,8 +1397,8 @@
             calculate the various classpaths used for compilation, testing, and so on.
             It also assists in determining which artifacts to include in a distribution of
             this project. For more information, see
-            <a href="http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html">the
-            dependency mechanism</a>.
+            <a href="https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html">the
+            dependency mechanism</a>. The default scope is <code>compile</code>.
             ]]>
           </description>
           <type>String</type>
@@ -1532,8 +1532,8 @@
      */
     public String getArtifact()
     {
-        // If the jar name has been explicty set then use that. This
-        // is when the <jar/> element is explicity used in the POM.
+        // If the jar name has been explicitly set then use that. This
+        // is when the <jar/> element is explicitly used in the POM.
         if ( getJar() != null)
         {
             return getJar();
@@ -2095,8 +2095,8 @@
             The source control management system URL
             that describes the repository and how to connect to the
             repository. For more information, see the
-            <a href="http://maven.apache.org/scm/scm-url-format.html">URL format</a>
-            and <a href="http://maven.apache.org/scm/scms-overview.html">list of supported SCMs</a>.
+            <a href="https://maven.apache.org/scm/scm-url-format.html">URL format</a>
+            and <a href="https://maven.apache.org/scm/scms-overview.html">list of supported SCMs</a>.
             This connection is read-only.
             ]]>
           </description>
@@ -2139,10 +2139,10 @@
             The source control management system URL
             that describes the repository and how to connect to the
             repository. For more information, see the
-            <a href="http://maven.apache.org/scm/scm-url-format.html">URL format</a>
-            and <a href="http://maven.apache.org/scm/scms-overview.html">list of supported SCMs</a>.
+            <a href="https://maven.apache.org/scm/scm-url-format.html">URL format</a>
+            and <a href="https://maven.apache.org/scm/scms-overview.html">list of supported SCMs</a>.
             This connection is read-only.
-            <br /><b>Default value is</b>: parent value [+ path adjustment] + artifactId
+            <br /><b>Default value is</b>: parent value [+ path adjustment] + (artifactId or <code>project.directory</code> property) 
             ]]>
           </description>
           <type>String</type>
@@ -2154,7 +2154,7 @@
             <![CDATA[
             Just like <code>connection</code>, but for developers, i.e. this scm connection
             will not be read only.
-            <br /><b>Default value is</b>: parent value [+ path adjustment] + artifactId
+            <br /><b>Default value is</b>: parent value [+ path adjustment] + (artifactId or <code>project.directory</code> property)
             ]]>
           </description>
           <type>String</type>
@@ -2172,7 +2172,7 @@
           <description>
             <![CDATA[
             The URL to the project's browsable SCM repository, such as ViewVC or Fisheye.
-            <br /><b>Default value is</b>: parent value [+ path adjustment] + artifactId
+            <br /><b>Default value is</b>: parent value [+ path adjustment] + (artifactId or <code>project.directory</code> property)
             ]]>
           </description>
           <type>String</type>
@@ -2605,7 +2605,7 @@
           <description>
             <![CDATA[
             The url of the location where website is deployed, in the form <code>protocol://hostname/path</code>.
-            <br /><b>Default value is</b>: parent value [+ path adjustment] + artifactId
+            <br /><b>Default value is</b>: parent value [+ path adjustment] + (artifactId or <code>project.directory</code> property)
             ]]>
           </description>
           <type>String</type>
@@ -2642,8 +2642,8 @@
             <li><code>combine.children</code>: available values are <code>merge</code> (default) and <code>append</code>,</li>
             <li><code>combine.self</code>: available values are <code>merge</code> (default) and <code>override</code>.</li>
             </ul>
-            <p>See <a href="http://maven.apache.org/pom.html#Plugins">POM Reference documentation</a> and
-            <a href="http://plexus.codehaus.org/plexus-utils/apidocs/org/codehaus/plexus/util/xml/Xpp3DomUtils.html">Xpp3DomUtils</a>
+            <p>See <a href="https://maven.apache.org/pom.html#Plugins">POM Reference documentation</a> and
+            <a href="https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/xml/Xpp3DomUtils.html">Xpp3DomUtils</a>
             for more information.</p>
             ]]>
           </description>
@@ -3483,12 +3483,12 @@
           <type>String</type>
           <defaultValue>2.0</defaultValue>
           <description><![CDATA[
-            For a plugin project, the minimum version of Maven required to use
-            the resulting plugin.<br />
-            For specifying the minimum version of Maven required to build a
-            project, this element is <b>deprecated</b>. Use the Maven Enforcer
-            Plugin's <a href="https://maven.apache.org/enforcer/enforcer-rules/requireMavenVersion.html"><code>requireMavenVersion</code></a>
-            rule instead.
+            For a plugin project (packaging is <code>maven-plugin</code>), the minimum version of
+            Maven required to use the resulting plugin.<br />
+            In Maven 2, this was also specifying the minimum version of Maven required to build a
+            project, but this usage is <b>deprecated</b> in Maven 3 and not checked any more: use
+            the <a href="https://maven.apache.org/enforcer/enforcer-rules/requireMavenVersion.html">Maven Enforcer Plugin's
+            <code>requireMavenVersion</code> rule</a> instead.
             ]]>
           </description>
           <required>false</required>

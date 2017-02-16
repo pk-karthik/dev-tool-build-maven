@@ -118,7 +118,7 @@ public class MetadataResolutionResult
 
     public List<Artifact> getMissingArtifacts()
     {
-        return missingArtifacts == null ? Collections.<Artifact> emptyList() : missingArtifacts;
+        return missingArtifacts == null ? Collections.<Artifact>emptyList() : missingArtifacts;
     }
 
     public MetadataResolutionResult addMissingArtifact( Artifact artifact )
@@ -148,7 +148,7 @@ public class MetadataResolutionResult
 
     public List<Exception> getExceptions()
     {
-        return exceptions == null ? Collections.<Exception> emptyList() : exceptions;
+        return exceptions == null ? Collections.<Exception>emptyList() : exceptions;
     }
 
     // ------------------------------------------------------------------------
@@ -161,7 +161,7 @@ public class MetadataResolutionResult
     }
 
     /**
-     * @TODO this needs to accept a {@link OverConstrainedVersionException} as returned by
+     * TODO this needs to accept a {@link OverConstrainedVersionException} as returned by
      *       {@link #getVersionRangeViolation(int)} but it's not used like that in
      *       {@link DefaultLegacyArtifactCollector}
      */
@@ -185,7 +185,7 @@ public class MetadataResolutionResult
 
     public List<Exception> getVersionRangeViolations()
     {
-        return versionRangeViolations == null ? Collections.<Exception> emptyList() : versionRangeViolations;
+        return versionRangeViolations == null ? Collections.<Exception>emptyList() : versionRangeViolations;
     }
 
     // ------------------------------------------------------------------------
@@ -217,7 +217,7 @@ public class MetadataResolutionResult
 
     public List<ArtifactResolutionException> getMetadataResolutionExceptions()
     {
-        return metadataResolutionExceptions == null ? Collections.<ArtifactResolutionException> emptyList()
+        return metadataResolutionExceptions == null ? Collections.<ArtifactResolutionException>emptyList()
                         : metadataResolutionExceptions;
     }
 
@@ -322,21 +322,19 @@ public class MetadataResolutionResult
 
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        if ( artifacts == null )
+            return "";
 
-        if ( artifacts != null )
+        StringBuilder sb = new StringBuilder( 256 );
+        int i = 1;
+        sb.append( "---------\n" );
+        sb.append( artifacts.size() ).append( '\n' );
+        for ( Artifact a : artifacts )
         {
-            int i = 1;
-            sb.append( "---------" ).append( "\n" );
-            sb.append( artifacts.size() ).append( "\n" );
-            for ( Artifact a : artifacts )
-            {
-                sb.append( i ).append( " " ).append( a ).append( "\n" );
-                i++;
-            }
-            sb.append( "---------" ).append( "\n" );
+            sb.append( i ).append( ' ' ).append( a ).append( '\n' );
+            i++;
         }
-
+        sb.append( "---------\n" );
         return sb.toString();
     }
 

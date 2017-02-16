@@ -43,7 +43,6 @@ import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.Extension;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.ReportPlugin;
@@ -73,9 +72,6 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.WorkspaceRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.VersionRangeRequest;
-import org.eclipse.aether.resolution.VersionRangeResolutionException;
-import org.eclipse.aether.resolution.VersionRangeResult;
 
 /**
  */
@@ -116,14 +112,14 @@ public class DefaultProjectBuilder
     public ProjectBuildingResult build( File pomFile, ProjectBuildingRequest request )
         throws ProjectBuildingException
     {
-        return build( pomFile, new FileModelSource( pomFile ), new InternalConfig( request, null ) );
+        return build( pomFile, new FileModelSource( pomFile ), new InternalConfig( request, null, null ) );
     }
 
     @Override
     public ProjectBuildingResult build( ModelSource modelSource, ProjectBuildingRequest request )
         throws ProjectBuildingException
     {
-        return build( null, modelSource, new InternalConfig( request, null ) );
+        return build( null, modelSource, new InternalConfig( request, null, null ) );
     }
 
     private ProjectBuildingResult build( File pomFile, ModelSource modelSource, InternalConfig config )
@@ -275,7 +271,7 @@ public class DefaultProjectBuilder
         request.setUserProperties( configuration.getUserProperties() );
         request.setBuildStartTime( configuration.getBuildStartTime() );
         request.setModelResolver( resolver );
-        request.setModelCache( new ReactorModelCache() );
+        request.setModelCache( config.modelCache );
 
         return request;
     }
@@ -294,47 +290,9 @@ public class DefaultProjectBuilder
         org.eclipse.aether.artifact.Artifact pomArtifact = RepositoryUtils.toArtifact( artifact );
         pomArtifact = ArtifactDescriptorUtils.toPomArtifact( pomArtifact );
 
-        InternalConfig config = new InternalConfig( request, null );
+        InternalConfig config = new InternalConfig( request, null, null );
 
         boolean localProject;
-
-        if ( request.isResolveVersionRanges() )
-        {
-            VersionRangeRequest versionRangeRequest = new VersionRangeRequest( pomArtifact, config.repositories, null );
-
-            try
-            {
-                VersionRangeResult versionRangeResult =
-                    repoSystem.resolveVersionRange( config.session, versionRangeRequest );
-
-                if ( versionRangeResult.getHighestVersion() == null )
-                {
-                    throw new ProjectBuildingException(
-                        artifact.getId(), "Error resolving project artifact: No versions matched the requested range",
-                        (Throwable) null );
-
-                }
-
-                if ( versionRangeResult.getVersionConstraint() != null
-                         && versionRangeResult.getVersionConstraint().getRange() != null
-                         && versionRangeResult.getVersionConstraint().getRange().getUpperBound() == null )
-                {
-                    throw new ProjectBuildingException(
-                        artifact.getId(),
-                        "Error resolving project artifact: The requested version range does not specify an upper bound",
-                        (Throwable) null );
-
-                }
-
-                pomArtifact = pomArtifact.setVersion( versionRangeResult.getHighestVersion().toString() );
-            }
-            catch ( VersionRangeResolutionException e )
-            {
-                throw new ProjectBuildingException(
-                    artifact.getId(), "Error resolving project artifact: " + e.getMessage(), e );
-
-            }
-        }
 
         try
         {
@@ -394,7 +352,9 @@ public class DefaultProjectBuilder
 
         ReactorModelPool modelPool = new ReactorModelPool();
 
-        InternalConfig config = new InternalConfig( request, modelPool );
+        ReactorModelCache modelCache = new ReactorModelCache();
+
+        InternalConfig config = new InternalConfig( request, modelPool, modelCache );
 
         Map<String, MavenProject> projectIndex = new HashMap<>( 256 );
 
@@ -654,11 +614,20 @@ public class DefaultProjectBuilder
         project.setModel( model );
         project.setOriginalModel( result.getRawModel() );
         project.setFile( model.getPomFile() );
-        Parent p = model.getParent();
-        if ( p != null )
+
+        Model parentModel = result.getModelIds().size() > 1 && !result.getModelIds().get( 1 ).isEmpty()
+                                ? result.getRawModel( result.getModelIds().get( 1 ) )
+                                : null;
+
+        if ( parentModel != null )
         {
-            project.setParentArtifact( repositorySystem.createProjectArtifact( p.getGroupId(), p.getArtifactId(),
-                                                                               p.getVersion() ) );
+            final String parentGroupId = inheritedGroupId( result, 1 );
+            final String parentVersion = inheritedVersion( result, 1 );
+
+            project.setParentArtifact( repositorySystem.createProjectArtifact( parentGroupId,
+                                                                               parentModel.getArtifactId(),
+                                                                               parentVersion ) );
+
             // org.apache.maven.its.mng4834:parent:0.1
             String parentModelId = result.getModelIds().get( 1 );
             File parentPomFile = result.getRawModel( parentModelId ).getPomFile();
@@ -681,7 +650,16 @@ public class DefaultProjectBuilder
                     catch ( ProjectBuildingException e )
                     {
                         // MNG-4488 where let invalid parents slide on by
-                        logger.warn( "Failed to build parent project for " + project.getId() );
+                        if ( logger.isDebugEnabled() )
+                        {
+                            // Message below is checked for in the MNG-2199 core IT.
+                            logger.warn( "Failed to build parent project for " + project.getId(), e );
+                        }
+                        else
+                        {
+                            // Message below is checked for in the MNG-2199 core IT.
+                            logger.warn( "Failed to build parent project for " + project.getId() );
+                        }
                     }
                 }
                 else
@@ -694,7 +672,16 @@ public class DefaultProjectBuilder
                     catch ( ProjectBuildingException e )
                     {
                         // MNG-4488 where let invalid parents slide on by
-                        logger.warn( "Failed to build parent project for " + project.getId() );
+                        if ( logger.isDebugEnabled() )
+                        {
+                            // Message below is checked for in the MNG-2199 core IT.
+                            logger.warn( "Failed to build parent project for " + project.getId(), e );
+                        }
+                        else
+                        {
+                            // Message below is checked for in the MNG-2199 core IT.
+                            logger.warn( "Failed to build parent project for " + project.getId() );
+                        }
                     }
                 }
             }
@@ -876,6 +863,40 @@ public class DefaultProjectBuilder
         }
     }
 
+    private static String inheritedGroupId( final ModelBuildingResult result, final int modelIndex )
+    {
+        String groupId = null;
+        final String modelId = result.getModelIds().get( modelIndex );
+
+        if ( !modelId.isEmpty() )
+        {
+            final Model model = result.getRawModel( modelId );
+            groupId = model.getGroupId() != null
+                          ? model.getGroupId()
+                          : inheritedGroupId( result, modelIndex + 1 );
+
+        }
+
+        return groupId;
+    }
+
+    private static String inheritedVersion( final ModelBuildingResult result, final int modelIndex )
+    {
+        String version = null;
+        final String modelId = result.getModelIds().get( modelIndex );
+
+        if ( !modelId.isEmpty() )
+        {
+            final Model model = result.getRawModel( modelId );
+            version = model.getVersion() != null
+                          ? model.getVersion()
+                          : inheritedVersion( result, modelIndex + 1 );
+
+        }
+
+        return version;
+    }
+
     private String findProfilesXml( ModelBuildingResult result, Map<File, Boolean> profilesXmls )
     {
         for ( String modelId : result.getModelIds() )
@@ -913,11 +934,14 @@ public class DefaultProjectBuilder
         public final List<RemoteRepository> repositories;
 
         public final ReactorModelPool modelPool;
+        
+        public final ReactorModelCache modelCache;
 
-        InternalConfig( ProjectBuildingRequest request, ReactorModelPool modelPool )
+        InternalConfig( ProjectBuildingRequest request, ReactorModelPool modelPool, ReactorModelCache modelCache )
         {
             this.request = request;
             this.modelPool = modelPool;
+            this.modelCache = modelCache;
             session =
                 LegacyLocalRepositoryManager.overlay( request.getLocalRepository(), request.getRepositorySession(),
                                                       repoSystem );

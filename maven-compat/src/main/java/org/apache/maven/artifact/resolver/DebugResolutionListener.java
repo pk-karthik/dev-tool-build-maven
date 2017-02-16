@@ -71,7 +71,7 @@ public class DebugResolutionListener
 
         if ( omittedVersion != null ? !omittedVersion.equals( keptVersion ) : keptVersion != null )
         {
-            logger.debug( indent + omitted + " (removed - nearer found: " + kept.getVersion() + ")" );
+            logger.debug( indent + omitted + " (removed - nearer found: " + keptVersion + ")" );
         }
     }
 
@@ -85,7 +85,7 @@ public class DebugResolutionListener
         logger.debug( indent + artifact + " (not setting artifactScope to: " + ignoredScope + "; local artifactScope "
             + artifact.getScope() + " wins)" );
 
-        // TODO: better way than static? this might hide messages in a reactor
+        // TODO better way than static? this might hide messages in a reactor
         if ( !ignoredArtifacts.contains( artifact ) )
         {
             logger.warn( "\n\tArtifact " + artifact + " retains local artifactScope '" + artifact.getScope()

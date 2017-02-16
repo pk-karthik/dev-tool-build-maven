@@ -58,13 +58,14 @@ import java.util.Properties;
  * Use a regular expression search to find and resolve expressions within the POM.
  *
  * @author jdcasey Created on Feb 3, 2005
- * @todo Consolidate this logic with the PluginParameterExpressionEvaluator, minus deprecations/bans.
+ * TODO Consolidate this logic with the PluginParameterExpressionEvaluator, minus deprecations/bans.
  */
 @Deprecated
 public abstract class AbstractStringBasedModelInterpolator
     extends AbstractLogEnabled
     implements ModelInterpolator, Initializable
 {
+
     private static final List<String> PROJECT_PREFIXES = Arrays.asList( "pom.", "project." );
 
     private static final List<String> TRANSLATED_PATH_EXPRESSIONS;
@@ -103,7 +104,7 @@ public abstract class AbstractStringBasedModelInterpolator
     }
 
     /**
-     * @todo: Remove the throws clause.
+     * TODO Remove the throws clause.
      * @throws IOException This exception is not thrown any more, and needs to be removed.
      */
     protected AbstractStringBasedModelInterpolator()
@@ -122,8 +123,9 @@ public abstract class AbstractStringBasedModelInterpolator
      * <br/>
      * <b>NOTE:</b> This will result in a different instance of Model being returned!!!
      *
-     * @param model   The inbound Model instance, to serialize and reference for expression resolution
+     * @param model The inbound Model instance, to serialize and reference for expression resolution
      * @param context The other context map to be used during resolution
+     *
      * @return The resolved instance of the inbound Model. This is a different instance!
      *
      * @deprecated Use {@link ModelInterpolator#interpolate(Model, File, ProjectBuilderConfiguration, boolean)} instead.
@@ -188,8 +190,6 @@ public abstract class AbstractStringBasedModelInterpolator
      *       with the value, and continue to find other expressions.</li>
      *   <li>If the value is null, get it from the model properties.</li>
      *   <li>
-     * @param overrideContext
-     * @param outputDebugMessages
      */
     public String interpolate( String src,
                                Model model,
@@ -227,6 +227,7 @@ public abstract class AbstractStringBasedModelInterpolator
 
         ValueSource basedirValueSource = new PrefixedValueSourceWrapper( new AbstractValueSource( false )
         {
+
             public Object getValue( String expression )
             {
                 if ( projectDir != null && "basedir".equals( expression ) )
@@ -235,9 +236,11 @@ public abstract class AbstractStringBasedModelInterpolator
                 }
                 return null;
             }
+
         }, PROJECT_PREFIXES, true );
         ValueSource baseUriValueSource = new PrefixedValueSourceWrapper( new AbstractValueSource( false )
         {
+
             public Object getValue( String expression )
             {
                 if ( projectDir != null && "baseUri".equals( expression ) )
@@ -246,6 +249,7 @@ public abstract class AbstractStringBasedModelInterpolator
                 }
                 return null;
             }
+
         }, PROJECT_PREFIXES, false );
 
         List<ValueSource> valueSources = new ArrayList<>( 9 );
@@ -260,10 +264,12 @@ public abstract class AbstractStringBasedModelInterpolator
         valueSources.add( new MapBasedValueSource( config.getExecutionProperties() ) );
         valueSources.add( new AbstractValueSource( false )
         {
+
             public Object getValue( String expression )
             {
                 return config.getExecutionProperties().getProperty( "env." + expression );
             }
+
         } );
         valueSources.add( modelValueSource2 );
 
@@ -273,11 +279,13 @@ public abstract class AbstractStringBasedModelInterpolator
     protected List<InterpolationPostProcessor> createPostProcessors( final Model model, final File projectDir,
                                                                      final ProjectBuilderConfiguration config )
     {
-        return Collections.singletonList( (InterpolationPostProcessor) new PathTranslatingPostProcessor(
-                                                                                                         PROJECT_PREFIXES,
-                                                                                                         TRANSLATED_PATH_EXPRESSIONS,
-                                                                                                         projectDir,
-                                                                                                         pathTranslator ) );
+        return Collections.singletonList(
+            (InterpolationPostProcessor) new PathTranslatingPostProcessor(
+                PROJECT_PREFIXES,
+                TRANSLATED_PATH_EXPRESSIONS,
+                projectDir,
+                pathTranslator ) );
+
     }
 
     @SuppressWarnings( "unchecked" )

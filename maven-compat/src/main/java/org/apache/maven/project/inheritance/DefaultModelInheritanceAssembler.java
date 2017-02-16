@@ -51,7 +51,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 public class DefaultModelInheritanceAssembler
     implements ModelInheritanceAssembler
 {
-    // TODO: Remove this!
+    // TODO Remove this!
     @SuppressWarnings( "unchecked" )
     public void assembleBuildInheritance( Build childBuild, Build parentBuild, boolean handleAsInheritance )
     {
@@ -230,7 +230,7 @@ public class DefaultModelInheritanceAssembler
             }
         }
 
-        assembleDistributionInheritence( child, parent, childPathAdjustment, appendPaths );
+        assembleDistributionInheritance( child, parent, childPathAdjustment, appendPaths );
 
         // issueManagement
         if ( child.getIssueManagement() == null )
@@ -303,7 +303,7 @@ public class DefaultModelInheritanceAssembler
         child.setProperties( props );
     }
 
-    // TODO: Remove this!
+    // TODO Remove this!
     @SuppressWarnings( "unchecked" )
     private void assembleDependencyManagementInheritance( Model child, Model parent )
     {
@@ -523,7 +523,7 @@ public class DefaultModelInheritanceAssembler
 
     }
 
-    // TODO: Remove this!
+    // TODO Remove this!
     @SuppressWarnings( "unchecked" )
     private void assembleDependencyInheritance( Model child, Model parent )
     {
@@ -569,7 +569,7 @@ public class DefaultModelInheritanceAssembler
         }
     }
 
-    private void assembleDistributionInheritence( Model child, Model parent, String childPathAdjustment,
+    private void assembleDistributionInheritance( Model child, Model parent, String childPathAdjustment,
                                                   boolean appendPaths )
     {
         if ( parent.getDistributionManagement() != null )
@@ -653,7 +653,7 @@ public class DefaultModelInheritanceAssembler
         return repository;
     }
 
-    // TODO: This should eventually be migrated to DefaultPathTranslator.
+    // TODO This should eventually be migrated to DefaultPathTranslator.
     protected String appendPath( String parentPath, String childPath, String pathAdjustment, boolean appendPaths )
     {
         String uncleanPath = parentPath;
@@ -689,7 +689,7 @@ public class DefaultModelInheritanceAssembler
         return cleanedPath + resolvePath( uncleanPath );
     }
 
-    // TODO: Move this to plexus-utils' PathTool.
+    // TODO Move this to plexus-utils' PathTool.
     private static String resolvePath( String uncleanPath )
     {
         LinkedList<String> pathElements = new LinkedList<>();

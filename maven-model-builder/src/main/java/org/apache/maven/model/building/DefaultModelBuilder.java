@@ -195,15 +195,15 @@ public class DefaultModelBuilder
         return this;
     }
 
-    public DefaultModelBuilder setDependencyManagementImporter( DependencyManagementImporter depMngmntImporter )
+    public DefaultModelBuilder setDependencyManagementImporter( DependencyManagementImporter depMgmtImporter )
     {
-        this.dependencyManagementImporter = depMngmntImporter;
+        this.dependencyManagementImporter = depMgmtImporter;
         return this;
     }
 
-    public DefaultModelBuilder setDependencyManagementInjector( DependencyManagementInjector depMngmntInjector )
+    public DefaultModelBuilder setDependencyManagementInjector( DependencyManagementInjector depMgmtInjector )
     {
-        this.dependencyManagementInjector = depMngmntInjector;
+        this.dependencyManagementInjector = depMgmtInjector;
         return this;
     }
 
@@ -333,7 +333,7 @@ public class DefaultModelBuilder
                 currentData = superData;
             }
             else if ( currentData == resultData )
-            { // First iteration - add initial parent id after version resolution.
+            { // First iteration - add initial id after version resolution.
                 currentData.setGroupId( currentData.getRawModel().getGroupId() == null ? parentData.getGroupId()
                                                                                       : currentData.getRawModel()
                                                                                           .getGroupId() );
@@ -683,10 +683,10 @@ public class DefaultModelBuilder
                         plugins.put( key, plugin );
                     }
                 }
-                PluginManagement mngt = build.getPluginManagement();
-                if ( mngt != null )
+                PluginManagement mgmt = build.getPluginManagement();
+                if ( mgmt != null )
                 {
-                    for ( Plugin plugin : mngt.getPlugins() )
+                    for ( Plugin plugin : mgmt.getPlugins() )
                     {
                         String key = plugin.getKey();
                         if ( managedVersions.get( key ) == null )
@@ -888,7 +888,7 @@ public class DefaultModelBuilder
         }
 
         //
-        // TODO:jvz Why isn't all this checking the job of the duty of the workspace resolver, we know that we
+        // TODO jvz Why isn't all this checking the job of the duty of the workspace resolver, we know that we
         // have a model that is suitable, yet more checks are done here and the one for the version is problematic
         // before because with parents as ranges it will never work in this scenario.
         //
@@ -914,8 +914,8 @@ public class DefaultModelBuilder
             {
                 buffer.append( " of POM " ).append( ModelProblemUtils.toSourceHint( childModel ) );
             }
-            buffer.append( " points at " ).append( groupId ).append( ":" ).append( artifactId );
-            buffer.append( " instead of " ).append( parent.getGroupId() ).append( ":" );
+            buffer.append( " points at " ).append( groupId ).append( ':' ).append( artifactId );
+            buffer.append( " instead of " ).append( parent.getGroupId() ).append( ':' );
             buffer.append( parent.getArtifactId() ).append( ", please verify your project structure" );
 
             problems.setSource( childModel );
@@ -938,6 +938,28 @@ public class DefaultModelBuilder
                     // version skew drop back to resolution from the repository
                     return null;
                 }
+
+                // Validate versions aren't inherited when using parent ranges the same way as when read externally.
+                if ( childModel.getVersion() == null )
+                {
+                    // Message below is checked for in the MNG-2199 core IT.
+                    problems.add( new ModelProblemCollectorRequest( Severity.FATAL, Version.V31 )
+                        .setMessage( "Version must be a constant" ).setLocation( childModel.getLocation( "" ) ) );
+
+                }
+                else
+                {
+                    if ( childModel.getVersion().contains( "${" ) )
+                    {
+                        // Message below is checked for in the MNG-2199 core IT.
+                        problems.add( new ModelProblemCollectorRequest( Severity.FATAL, Version.V31 )
+                            .setMessage( "Version must be a constant" )
+                            .setLocation( childModel.getLocation( "version" ) ) );
+
+                    }
+                }
+
+                // MNG-2199: What else to check here ?
             }
             catch ( InvalidVersionSpecificationException e )
             {
@@ -1001,11 +1023,12 @@ public class DefaultModelBuilder
         }
         catch ( UnresolvableModelException e )
         {
+            // Message below is checked for in the MNG-2199 core IT.
             StringBuilder buffer = new StringBuilder( 256 );
             buffer.append( "Non-resolvable parent POM" );
             if ( !containsCoordinates( e.getMessage(), groupId, artifactId, version ) )
             {
-                buffer.append( " " ).append( ModelProblemUtils.toId( groupId, artifactId, version ) );
+                buffer.append( ' ' ).append( ModelProblemUtils.toId( groupId, artifactId, version ) );
             }
             if ( childModel != problems.getRootModel() )
             {
@@ -1048,15 +1071,16 @@ public class DefaultModelBuilder
         {
             if ( childModel.getVersion() == null )
             {
+                // Message below is checked for in the MNG-2199 core IT.
                 problems.add( new ModelProblemCollectorRequest( Severity.FATAL, Version.V31 )
                     .setMessage( "Version must be a constant" ).setLocation( childModel.getLocation( "" ) ) );
 
             }
             else
             {
-                if ( childModel.getVersion()
-                               .contains( "${" ) )
+                if ( childModel.getVersion().contains( "${" ) )
                 {
+                    // Message below is checked for in the MNG-2199 core IT.
                     problems.add( new ModelProblemCollectorRequest( Severity.FATAL, Version.V31 )
                         .setMessage( "Version must be a constant" )
                         .setLocation( childModel.getLocation( "version" ) ) );
@@ -1081,9 +1105,9 @@ public class DefaultModelBuilder
     private void importDependencyManagement( Model model, ModelBuildingRequest request,
                                              DefaultModelProblemCollector problems, Collection<String> importIds )
     {
-        DependencyManagement depMngt = model.getDependencyManagement();
+        DependencyManagement depMgmt = model.getDependencyManagement();
 
-        if ( depMngt == null )
+        if ( depMgmt == null )
         {
             return;
         }
@@ -1097,9 +1121,9 @@ public class DefaultModelBuilder
 
         ModelBuildingRequest importRequest = null;
 
-        List<DependencyManagement> importMngts = null;
+        List<DependencyManagement> importMgmts = null;
 
-        for ( Iterator<Dependency> it = depMngt.getDependencies().iterator(); it.hasNext(); )
+        for ( Iterator<Dependency> it = depMgmt.getDependencies().iterator(); it.hasNext(); )
         {
             Dependency dependency = it.next();
 
@@ -1154,10 +1178,10 @@ public class DefaultModelBuilder
                 continue;
             }
 
-            DependencyManagement importMngt = getCache( request.getModelCache(), groupId, artifactId, version,
+            DependencyManagement importMgmt = getCache( request.getModelCache(), groupId, artifactId, version,
                                                         ModelCacheTag.IMPORT );
 
-            if ( importMngt == null )
+            if ( importMgmt == null )
             {
                 if ( workspaceResolver == null && modelResolver == null )
                 {
@@ -1197,7 +1221,7 @@ public class DefaultModelBuilder
                         buffer.append( "Non-resolvable import POM" );
                         if ( !containsCoordinates( e.getMessage(), groupId, artifactId, version ) )
                         {
-                            buffer.append( " " ).append( ModelProblemUtils.toId( groupId, artifactId, version ) );
+                            buffer.append( ' ' ).append( ModelProblemUtils.toId( groupId, artifactId, version ) );
                         }
                         buffer.append( ": " ).append( e.getMessage() );
 
@@ -1236,27 +1260,27 @@ public class DefaultModelBuilder
                     importModel = importResult.getEffectiveModel();
                 }
 
-                importMngt = importModel.getDependencyManagement();
+                importMgmt = importModel.getDependencyManagement();
 
-                if ( importMngt == null )
+                if ( importMgmt == null )
                 {
-                    importMngt = new DependencyManagement();
+                    importMgmt = new DependencyManagement();
                 }
 
-                putCache( request.getModelCache(), groupId, artifactId, version, ModelCacheTag.IMPORT, importMngt );
+                putCache( request.getModelCache(), groupId, artifactId, version, ModelCacheTag.IMPORT, importMgmt );
             }
 
-            if ( importMngts == null )
+            if ( importMgmts == null )
             {
-                importMngts = new ArrayList<>();
+                importMgmts = new ArrayList<>();
             }
 
-            importMngts.add( importMngt );
+            importMgmts.add( importMgmt );
         }
 
         importIds.remove( importing );
 
-        dependencyManagementImporter.importManagement( model, importMngts, request, problems );
+        dependencyManagementImporter.importManagement( model, importMgmts, request, problems );
     }
 
     private <T> void putCache( ModelCache modelCache, String groupId, String artifactId, String version,

@@ -153,10 +153,10 @@ public class DefaultProjectDependenciesResolver
             }
         }
 
-        DependencyManagement depMngt = project.getDependencyManagement();
-        if ( depMngt != null )
+        DependencyManagement depMgmt = project.getDependencyManagement();
+        if ( depMgmt != null )
         {
-            for ( Dependency dependency : depMngt.getDependencies() )
+            for ( Dependency dependency : depMgmt.getDependencies() )
             {
                 collect.addManagedDependency( RepositoryUtils.toDependency( dependency, stereotypes ) );
             }
@@ -263,7 +263,7 @@ public class DefaultProjectDependenciesResolver
                 {
                     buffer.append( " (scope managed from " ).append( premanagedScope );
                     appendManagementSource( buffer, art, "scope" );
-                    buffer.append( ")" );
+                    buffer.append( ')' );
                 }
 
                 String premanagedVersion = DependencyManagerUtils.getPremanagedVersion( node );
@@ -271,7 +271,7 @@ public class DefaultProjectDependenciesResolver
                 {
                     buffer.append( " (version managed from " ).append( premanagedVersion );
                     appendManagementSource( buffer, art, "version" );
-                    buffer.append( ")" );
+                    buffer.append( ')' );
                 }
             }
             else

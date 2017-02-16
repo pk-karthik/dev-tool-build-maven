@@ -19,12 +19,15 @@ package org.apache.maven.cli;
  * under the License.
  */
 
+import static org.apache.maven.shared.utils.logging.MessageUtils.buffer;
+
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.inject.AbstractModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.maven.BuildAbort;
 import org.apache.maven.InternalErrorException;
 import org.apache.maven.Maven;
@@ -62,6 +65,8 @@ import org.apache.maven.model.building.ModelProcessor;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.properties.internal.EnvironmentUtils;
 import org.apache.maven.properties.internal.SystemProperties;
+import org.apache.maven.shared.utils.logging.MessageBuilder;
+import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.apache.maven.toolchain.building.DefaultToolchainsBuildingRequest;
 import org.apache.maven.toolchain.building.ToolchainsBuilder;
 import org.apache.maven.toolchain.building.ToolchainsBuildingResult;
@@ -107,8 +112,10 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-// TODO: push all common bits back to plexus cli and prepare for transition to Guice. We don't need 50 ways to make CLIs
+// TODO push all common bits back to plexus cli and prepare for transition to Guice. We don't need 50 ways to make CLIs
 
 /**
  * @author Jason van Zyl
@@ -142,7 +149,7 @@ public class MavenCli
     public static final File DEFAULT_USER_TOOLCHAINS_FILE = new File( userMavenConfigurationHome, "toolchains.xml" );
 
     public static final File DEFAULT_GLOBAL_TOOLCHAINS_FILE =
-        new File( System.getProperty( "maven.home", System.getProperty( "user.dir", "" ) ), "conf/toolchains.xml" );
+        new File( System.getProperty( "maven.conf" ), "toolchains.xml" );
 
     private static final String EXT_CLASS_PATH = "maven.ext.class.path";
 
@@ -196,17 +203,26 @@ public class MavenCli
     public static int main( String[] args, ClassWorld classWorld )
     {
         MavenCli cli = new MavenCli();
-        return cli.doMain( new CliRequest( args, classWorld ) );
+
+        MessageUtils.systemInstall();
+        int result = cli.doMain( new CliRequest( args, classWorld ) );
+        MessageUtils.systemUninstall();
+
+        return result;
     }
 
-    // TODO: need to externalize CliRequest
+    // TODO need to externalize CliRequest
     public static int doMain( String[] args, ClassWorld classWorld )
     {
         MavenCli cli = new MavenCli();
         return cli.doMain( new CliRequest( args, classWorld ) );
     }
 
-    // This supports painless invocation by the Verifier during embedded execution of the core ITs
+    /**
+     * This supports painless invocation by the Verifier during embedded execution of the core ITs.
+     * See <a href="http://maven.apache.org/shared/maven-verifier/xref/org/apache/maven/it/Embedded3xLauncher.html">
+     * <code>Embedded3xLauncher</code> in <code>maven-verifier</code></a>
+     */
     public int doMain( String[] args, String workingDirectory, PrintStream stdout, PrintStream stderr )
     {
         PrintStream oldout = System.out;
@@ -267,7 +283,7 @@ public class MavenCli
         }
     }
 
-    // TODO: need to externalize CliRequest
+    // TODO need to externalize CliRequest
     public int doMain( CliRequest cliRequest )
     {
         PlexusContainer localContainer = null;
@@ -331,8 +347,7 @@ public class MavenCli
             if ( basedirProperty == null )
             {
                 System.err.format(
-                    "-D%s system property is not set." + " Check $M2_HOME environment variable and mvn script match.",
-                    MULTIMODULE_PROJECT_DIRECTORY );
+                    "-D%s system property is not set.", MULTIMODULE_PROJECT_DIRECTORY );
                 throw new ExitException( 1 );
             }
             File basedir = basedirProperty != null ? new File( basedirProperty ) : new File( "" );
@@ -450,10 +465,17 @@ public class MavenCli
         // else fall back to default log level specified in conf
         // see https://issues.apache.org/jira/browse/MNG-2570
 
+        if ( cliRequest.commandLine.hasOption( CLIManager.BATCH_MODE ) )
+        {
+            MessageUtils.setColorEnabled( false );
+        }
+
         if ( cliRequest.commandLine.hasOption( CLIManager.LOG_FILE ) )
         {
             File logFile = new File( cliRequest.commandLine.getOptionValue( CLIManager.LOG_FILE ) );
             logFile = resolveFile( logFile, cliRequest.workingDirectory );
+
+            MessageUtils.setColorEnabled( false );
 
             // redirect stdout and stderr to file
             try
@@ -499,9 +521,31 @@ public class MavenCli
         {
             slf4jLogger.info( "Enabling strict checksum verification on all artifact downloads." );
         }
+
+        if ( slf4jLogger.isDebugEnabled() )
+        {
+            slf4jLogger.debug( "Message scheme: " + ( MessageUtils.isColorEnabled() ? "color" : "plain" ) );
+            if ( MessageUtils.isColorEnabled() )
+            {
+                MessageBuilder buff = MessageUtils.buffer();
+                buff.a( "Message styles: " );
+                buff.debug( "debug" ).a( ' ' );
+                buff.info( "info" ).a( ' ' );
+                buff.warning( "warning" ).a( ' ' );
+                buff.error( "error" ).a( ' ' );
+                buff.success( "success" ).a( ' ' );
+                buff.failure( "failure" ).a( ' ' );
+                buff.strong( "strong" ).a( ' ' );
+                buff.mojo( "mojo" ).a( ' ' );
+                buff.project( "project" );
+                slf4jLogger.debug( buff.toString() );
+            }
+        }
     }
 
-    private void properties( CliRequest cliRequest )
+    //Needed to make this method package visible to make writing a unit test possible
+    //Maybe it's better to move some of those methods to separate class (SoC).
+    void properties( CliRequest cliRequest )
     {
         populateProperties( cliRequest.commandLine, cliRequest.systemProperties, cliRequest.userProperties );
     }
@@ -890,11 +934,13 @@ public class MavenCli
 
             if ( !cliRequest.showErrors )
             {
-                slf4jLogger.error( "To see the full stack trace of the errors, re-run Maven with the -e switch." );
+                slf4jLogger.error( "To see the full stack trace of the errors, re-run Maven with the "
+                    + buffer().strong( "-e" ) + " switch." );
             }
             if ( !slf4jLogger.isDebugEnabled() )
             {
-                slf4jLogger.error( "Re-run Maven using the -X switch to enable full debug logging." );
+                slf4jLogger.error( "Re-run Maven using the " + buffer().strong( "-X" )
+                    + " switch to enable full debug logging." );
             }
 
             if ( !references.isEmpty() )
@@ -905,7 +951,7 @@ public class MavenCli
 
                 for ( Map.Entry<String, String> entry : references.entrySet() )
                 {
-                    slf4jLogger.error( entry.getValue() + " " + entry.getKey() );
+                    slf4jLogger.error( buffer().strong( entry.getValue() ) + " " + entry.getKey() );
                 }
             }
 
@@ -913,7 +959,8 @@ public class MavenCli
             {
                 slf4jLogger.error( "" );
                 slf4jLogger.error( "After correcting the problems, you can resume the build with the command" );
-                slf4jLogger.error( "  mvn <goals> -rf :" + project.getArtifactId() );
+                slf4jLogger.error( buffer().a( "  " ).strong( "mvn <goals> -rf :"
+                                + project.getArtifactId() ).toString() );
             }
 
             if ( MavenExecutionRequest.REACTOR_FAIL_NEVER.equals( cliRequest.request.getReactorFailureBehavior() ) )
@@ -954,19 +1001,37 @@ public class MavenCli
         {
             if ( msg.indexOf( '\n' ) < 0 )
             {
-                msg += " -> " + referenceKey;
+                msg += " -> " + buffer().strong( referenceKey );
             }
             else
             {
-                msg += "\n-> " + referenceKey;
+                msg += "\n-> " + buffer().strong( referenceKey );
             }
         }
 
         String[] lines = msg.split( "(\r\n)|(\r)|(\n)" );
+        String currentColor = "";
 
         for ( int i = 0; i < lines.length; i++ )
         {
-            String line = indent + lines[i].trim();
+            // add eventual current color inherited from previous line 
+            String line = currentColor + lines[i];
+
+            // look for last ANSI escape sequence to check if nextColor
+            Matcher matcher = LAST_ANSI_SEQUENCE.matcher( line );
+            String nextColor = "";
+            if ( matcher.find() )
+            {
+                nextColor = matcher.group( 1 );
+                if ( ANSI_RESET.equals( nextColor ) )
+                {
+                    // last ANSI escape code is reset: no next color
+                    nextColor = "";
+                }
+            }
+
+            // effective line, with indent and reset if end is colored
+            line = indent + line + ( "".equals( nextColor ) ? "" : ANSI_RESET );
 
             if ( ( i == lines.length - 1 ) && ( showErrors
                 || ( summary.getException() instanceof InternalErrorException ) ) )
@@ -977,6 +1042,8 @@ public class MavenCli
             {
                 slf4jLogger.error( line );
             }
+
+            currentColor = nextColor;
         }
 
         indent += "  ";
@@ -987,7 +1054,10 @@ public class MavenCli
         }
     }
 
-    @SuppressWarnings( "checkstyle:methodlength" )
+    private static final Pattern LAST_ANSI_SEQUENCE = Pattern.compile( "(\u001B\\[[;\\d]*[ -/]*[@-~])[^\u001B]*$" );
+
+    private static final String ANSI_RESET = "\u001B\u005Bm";
+
     private void configure( CliRequest cliRequest )
         throws Exception
     {
@@ -1005,13 +1075,13 @@ public class MavenCli
         // present supplied by the user. The rule is that we only allow the execution of one ConfigurationProcessor.
         // If there is more than one then we execute the one supplied by the user, otherwise we execute the
         // the default SettingsXmlConfigurationProcessor.
-        // 
+        //
         int userSuppliedConfigurationProcessorCount = configurationProcessors.size() - 1;
 
         if ( userSuppliedConfigurationProcessorCount == 0 )
         {
             //
-            // Our settings.xml source is historically how we have configured Maven from the CLI so we are going to 
+            // Our settings.xml source is historically how we have configured Maven from the CLI so we are going to
             // have to honour its existence forever. So let's run it.
             //
             configurationProcessors.get( SettingsXmlConfigurationProcessor.HINT ).process( cliRequest );
@@ -1053,7 +1123,6 @@ public class MavenCli
         }
     }
 
-    @SuppressWarnings( "checkstyle:methodlength" )
     private void toolchains( CliRequest cliRequest )
         throws Exception
     {
@@ -1288,7 +1357,7 @@ public class MavenCli
             // If we're logging to a file then we don't want the console transfer listener as it will spew
             // download progress all over the place
             //
-            transferListener = getConsoleTransferListener();
+            transferListener = getConsoleTransferListener( cliRequest.commandLine.hasOption( CLIManager.DEBUG ) );
         }
         else
         {
@@ -1441,7 +1510,7 @@ public class MavenCli
         final String threadConfiguration = commandLine.hasOption( CLIManager.THREADS )
             ? commandLine.getOptionValue( CLIManager.THREADS )
             : request.getSystemProperties().getProperty(
-                MavenCli.THREADS_DEPRECATED ); // TODO: Remove this setting. Note that the int-tests use it
+                MavenCli.THREADS_DEPRECATED ); // TODO Remove this setting. Note that the int-tests use it
 
         if ( threadConfiguration != null )
         {
@@ -1461,7 +1530,7 @@ public class MavenCli
         }
 
         //
-        // Allow the builder to be overriden by the user if requested. The builders are now pluggable.
+        // Allow the builder to be overridden by the user if requested. The builders are now pluggable.
         //
         if ( commandLine.hasOption( CLIManager.BUILDER ) )
         {
@@ -1515,9 +1584,14 @@ public class MavenCli
         if ( commandLine.hasOption( CLIManager.SET_SYSTEM_PROPERTY ) )
         {
             String[] defStrs = commandLine.getOptionValues( CLIManager.SET_SYSTEM_PROPERTY );
-
+            
             if ( defStrs != null )
             {
+                //The following is needed to get precedence
+                //of properties which are defined on command line
+                //over properties defined in the .mvn/maven.config. 
+                ArrayUtils.reverse( defStrs );
+                
                 for ( String defStr : defStrs )
                 {
                     setCliProperty( defStr, userProperties );
@@ -1547,7 +1621,7 @@ public class MavenCli
 
         String value;
 
-        int i = property.indexOf( "=" );
+        int i = property.indexOf( '=' );
 
         if ( i <= 0 )
         {
@@ -1588,9 +1662,9 @@ public class MavenCli
     // Customizations available via the CLI
     //
 
-    protected TransferListener getConsoleTransferListener()
+    protected TransferListener getConsoleTransferListener( boolean printResourceNames )
     {
-        return new ConsoleMavenTransferListener( System.out );
+        return new ConsoleMavenTransferListener( System.out, printResourceNames );
     }
 
     protected TransferListener getBatchTransferListener()
